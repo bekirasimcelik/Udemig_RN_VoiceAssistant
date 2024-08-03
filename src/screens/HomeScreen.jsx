@@ -72,7 +72,7 @@ export default function HomeScreen() {
     };
   }, []);
   return (
-    <View className="flex-1 text-white">
+    <View className="flex-1 bg-white">
       <SafeAreaView className="flex-1 flex mx-5">
         <View className="flex-row justify-center">
           <Image
@@ -99,7 +99,9 @@ export default function HomeScreen() {
                     if (message.content.includes('https')) {
                       return (
                         <View key={index} className="flex-row justify-start">
-                          <View className="p-2 flex rounded-2xl bg-emerald-100 rounded-tl-none">
+                          <View
+                            style={{width: wp(70)}}
+                            className="flex bg-emerald-100 rounded-2xl p-2 rounded-tl-none">
                             <Image
                               source={{uri: message.content}}
                               className="rounded-2xl"
@@ -137,12 +139,21 @@ export default function HomeScreen() {
         ) : (
           <Features />
         )}
-        {/* recording, clear and stop buttons */}
         <View className="flex justify-center items-center">
+          {speaking.length > 0 && (
+            <TouchableOpacity
+              onPress={stopSpeaking}
+              className="bg-red-400 rounded-3xl p-2 absolute left-10">
+              <Text className="text-white font-semibold">Stop</Text>
+            </TouchableOpacity>
+          )}
           {recording ? (
-            <TouchableOpacity>
-              {/* recording stop button */}
-              onPress={stopRecording}
+            <Image
+              source={require('../assets/images/voiceRecord.png')}
+              style={{width: hp(10), height: hp(10)}}
+            />
+          ) : recording ? (
+            <TouchableOpacity onPress={stopRecording}>
               <Image
                 className="rounded-full"
                 source={require('../assets/images/voiceRecord.png')}
@@ -151,7 +162,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={startRecording}>
-              {/* recording start button */}
               <Image
                 className="rounded-full"
                 source={require('../assets/images/mic.png')}
@@ -164,13 +174,6 @@ export default function HomeScreen() {
               onPress={clear}
               className="bg-neutral-400 rounded-3xl p-2 absolute right-10">
               <Text className="text-white font-semibold">Clear</Text>
-            </TouchableOpacity>
-          )}
-          {speaking && (
-            <TouchableOpacity
-              onPress={stopSpeaking}
-              className="bg-red-400 rounded-3xl p-2 absolute left-10">
-              <Text className="text-white font-semibold">Stop</Text>
             </TouchableOpacity>
           )}
         </View>
