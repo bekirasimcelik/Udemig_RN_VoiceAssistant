@@ -62,6 +62,7 @@ export default function HomeScreen() {
 
   const stopRecording = async () => {
     setRecording(false);
+    // fetch response
     try {
       await Voice.stop();
       fetchResponse();
@@ -77,7 +78,7 @@ export default function HomeScreen() {
   };
 
   const startTextToSpeech = message => {
-    if (!message.content.includes('http')) {
+    if (!message.content.includes('https')) {
       Tts.getInitStatus().then(
         () => {
           Tts.speak(
@@ -120,6 +121,7 @@ export default function HomeScreen() {
     Voice.onSpeechResults = speechResultsHandler;
     Voice.onSpeechError = speechErrorHandler;
 
+    // TTS handler
     Tts.addEventListener('tts-start', event => console.log('start', event));
     Tts.addEventListener('tts-progress', event =>
       console.log('progress', event),
@@ -140,7 +142,7 @@ export default function HomeScreen() {
       <SafeAreaView className="flex-1 flex mx-5">
         <View className="flex-row justify-center">
           <Image
-            source={require('../../assets/images/bot.png')}
+            source={require('../assets/images/JarvisBot.gif')}
             style={{height: hp(15), width: hp(15)}}
           />
         </View>
@@ -214,14 +216,14 @@ export default function HomeScreen() {
           )}
           {loading ? (
             <Image
-              source={require('../../assets/images/loading.gif')}
+              source={require('../assets/images/loading.gif')}
               style={{width: hp(10), height: hp(10)}}
             />
           ) : recording ? (
             <TouchableOpacity onPress={stopRecording}>
               <Image
                 className="rounded-full"
-                source={require('../../assets/images/voiceLoading.gif')}
+                source={require('../assets/images/voiceRecord.png')}
                 style={{width: hp(10), height: hp(10)}}
               />
             </TouchableOpacity>
@@ -229,7 +231,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={startRecording}>
               <Image
                 className="rounded-full"
-                source={require('../../assets/images/recordingIcon.png')}
+                source={require('../assets/images/mic.png')}
                 style={{width: hp(10), height: hp(10)}}
               />
             </TouchableOpacity>
