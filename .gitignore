@@ -2,8 +2,8 @@
 #
 .DS_Store
 
-#Sabitler
-constants/
+#OpenAI api key
+src/constants/apiKey.js
 
 # Xcode
 #
