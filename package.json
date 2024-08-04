@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "AIVoiceAssistant",
   "version": "0.0.1",
   "private": true,
