@@ -1,82 +1,146 @@
-import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   Image,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import Features from '../components/Features';
-import {dummyMessages} from '../constants';
 import Voice from '@react-native-community/voice';
+import Features from '../components/Features';
+import {apiCall} from '../api/openAI';
+import Tts from 'react-native-tts';
 
 export default function HomeScreen() {
-  const [messages, setMessages] = useState(dummyMessages);
+  const [messages, setMessages] = useState([]);
   const [recording, setRecording] = useState(false);
-  const [speaking, setSpeaking] = useState(true);
-
-  const speechStartHandler = e => {
-    console.log('speech start handler');
-  };
-  const speechEndHandler = e => {
-    setRecording(false);
-    console.log('speech end handler');
-  };
-  const speechResultHandler = e => {
-    console.log('voice event: ', e);
-  };
-  const speechErrorHandler = e => {
-    console.log('speech error handler: ', e);
-  };
-  const startRecording = async () => {
-    setRecording(true);
-    try {
-      await Voice.start('en-GB'); // en-US
-    } catch (error) {
-      console.log('error: ', error);
-    }
-  };
-  const stopRecording = async () => {
-    try {
-      await Voice.stop();
-      setRecording(false);
-      // fecth response
-    } catch (error) {
-      console.log('error: ', error);
-    }
-  };
+  const [speaking, setSpeaking] = useState(false);
+  const [result, setResult] = useState('');
+  const [loading, setLoading] = useState(false);
+  const ScrollViewRef = useRef();
 
   const clear = () => {
     setMessages([]);
+    Tts.stop();
   };
 
   const stopSpeaking = () => {
+    Tts.stop();
     setSpeaking(false);
   };
 
+  const speechStartHandler = e => {};
+
+  const speechEndHandler = e => {
+    setRecording(false);
+  };
+
+  const speechResultsHandler = e => {
+    const text = e.value[0];
+    setResult(text);
+  };
+
+  const speechErrorHandler = e => {
+    console.log('error event: ', e);
+  };
+
+  const startRecording = async () => {
+    setRecording(true);
+    Tts.stop();
+    try {
+      await Voice.start('en-US');
+    } catch (error) {
+      console.log('error: ', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    setRecording(false);
+    try {
+      await Voice.stop();
+      fetchResponse();
+    } catch (error) {
+      console.log('error: ', error);
+    }
+  };
+
+  const updateScrollView = () => {
+    setTimeout(() => {
+      ScrollViewRef?.current?.scrollToEnd({animated: true});
+    }, 200);
+  };
+
+  const startTextToSpeech = message => {
+    if (!message.content.includes('http')) {
+      Tts.getInitStatus().then(
+        () => {
+          Tts.speak(
+            "Testing the text to speech functionality. Let's see if it works",
+          );
+        },
+        err => {
+          if (err.code === 'no_engine') {
+            Tts.requestInstallEngine();
+          }
+        },
+      );
+    }
+  };
+
+  const fetchResponse = () => {
+    if (result.trim().length > 0) {
+      let newMessages = [...messages];
+      newMessages.push({role: 'user', content: result.trim()});
+      setMessages([...newMessages]);
+      updateScrollView();
+      setLoading(true);
+      apiCall(result.trim(), newMessages).then(res => {
+        setLoading(false);
+        if (res.success) {
+          setMessages([...res.data]);
+          updateScrollView();
+          startTextToSpeech(res.data[res.data.length - 1]);
+          setResult('');
+        } else {
+          Alert.alert('Error', res.msg);
+        }
+      });
+    }
+  };
+
   useEffect(() => {
-    // Voice handler events
     Voice.onSpeechStart = speechStartHandler;
     Voice.onSpeechEnd = speechEndHandler;
-    Voice.onSpeechResults = speechResultHandler;
+    Voice.onSpeechResults = speechResultsHandler;
     Voice.onSpeechError = speechErrorHandler;
 
+    Tts.addEventListener('tts-start', event => console.log('start', event));
+    Tts.addEventListener('tts-progress', event =>
+      console.log('progress', event),
+    );
+    Tts.addEventListener('tts-finish', event => {
+      console.log('finish', event);
+      setSpeaking(false);
+    });
+    Tts.addEventListener('tts-cancel', event => console.log('cancel', event));
+
     return () => {
-      // destroy the voice instance
       Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
+
   return (
     <View className="flex-1 bg-white">
       <SafeAreaView className="flex-1 flex mx-5">
         <View className="flex-row justify-center">
           <Image
-            source={require('../assets/images/JarvisBot.gif')}
+            source={require('../../assets/images/bot.png')}
             style={{height: hp(15), width: hp(15)}}
           />
         </View>
@@ -91,6 +155,7 @@ export default function HomeScreen() {
               style={{height: hp(58)}}
               className="bg-neutral-200 rounded-3xl p-4">
               <ScrollView
+                ref={ScrollViewRef}
                 bounces={false}
                 className="space-y-4"
                 showsVerticalScrollIndicator={false}>
@@ -147,16 +212,16 @@ export default function HomeScreen() {
               <Text className="text-white font-semibold">Stop</Text>
             </TouchableOpacity>
           )}
-          {recording ? (
+          {loading ? (
             <Image
-              source={require('../assets/images/voiceRecord.png')}
+              source={require('../../assets/images/loading.gif')}
               style={{width: hp(10), height: hp(10)}}
             />
           ) : recording ? (
             <TouchableOpacity onPress={stopRecording}>
               <Image
                 className="rounded-full"
-                source={require('../assets/images/voiceRecord.png')}
+                source={require('../../assets/images/voiceLoading.gif')}
                 style={{width: hp(10), height: hp(10)}}
               />
             </TouchableOpacity>
@@ -164,7 +229,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={startRecording}>
               <Image
                 className="rounded-full"
-                source={require('../assets/images/mic.png')}
+                source={require('../../assets/images/recordingIcon.png')}
                 style={{width: hp(10), height: hp(10)}}
               />
             </TouchableOpacity>
